@@ -1,0 +1,90 @@
+// Game Configuration
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    backgroundColor: '#add8e6', // Pastel Blue Sky
+    physics: { default: 'arcade' },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let car, trafficLight, recognition, isListening = false;
+
+function preload() {
+    // Replace these URLs with your actual pastel assets
+    this.load.image('background', 'assets/road_scene.png');
+    this.load.image('car_worried', 'assets/red_car_eyes.png');
+    this.load.image('light_red', 'assets/traffic_red_smile.png');
+    this.load.image('light_green', 'assets/traffic_green_happy.png');
+}
+
+function create() {
+    this.add.image(400, 300, 'background');
+    
+    // Create the "Worried" Car
+    car = this.physics.add.sprite(150, 450, 'car_worried').setScale(0.5);
+    
+    // Create the Smiling Traffic Light
+    trafficLight = this.add.sprite(600, 200, 'light_red').setScale(0.4);
+
+    // Instruction Text
+    let promptText = this.add.text(400, 100, "Sebut: 'Jom kita berkongsi buaian'", {
+        fontSize: '32px', fill: '#ff69b4', fontFamily: 'Comic Sans MS'
+    }).setOrigin(0.5);
+
+    // Initialize Speech Recognition
+    setupSpeechRecognition(this);
+
+    // Click anywhere to start listening
+    this.input.on('pointerdown', () => {
+        if(!isListening) {
+            recognition.start();
+            console.log("Listening...");
+        }
+    });
+}
+
+function update() {
+    // Add idle "shaking" animation if car is waiting
+}
+
+// --- Voice Recognition Logic ---
+function setupSpeechRecognition(scene) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ms-MY'; // Set to Bahasa Melayu
+    
+    recognition.onresult = (event) => {
+        const result = event.results[0][0].transcript.toLowerCase();
+        console.log("Child said: " + result);
+
+        if (result.includes("berkongsi buaian") || result.includes("jom kita")) {
+            handleSuccess(scene);
+        } else {
+            handleFailure(scene);
+        }
+    };
+
+    recognition.onend = () => { isListening = false; };
+}
+
+function handleSuccess(scene) {
+    trafficLight.setTexture('light_green');
+    // Car moves forward happily
+    car.setVelocityX(200);
+    // Play happy audio (Placeholder)
+    console.log("Joyful Voice: Jom kita berkongsi buaian!");
+}
+
+function handleFailure(scene) {
+    // Gentle shake animation
+    scene.tweens.add({
+        targets: car,
+        x: car.x + 5,
+        duration: 50,
+        yoyo: true,
+        repeat: 5
+    });
+    console.log("Encouraging Voice: Cuba lagi ya!");
+}
